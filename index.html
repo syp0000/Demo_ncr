@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NCR Assistant">
+<meta name="theme-color" content="#0f1117">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon.svg">
+<title>NCR Assistant Demo</title>
+<link rel="stylesheet" href="./styles.css?v=20260411b">
+</head>
+<body class="auth-locked">
+
+<div class="auth-gate" id="authGate">
+  <div class="auth-card">
+    <div class="auth-badge" id="authBadge">SECURE ACCESS</div>
+    <div class="auth-title" id="authCardTitle">NCR Assistant</div>
+
+    <!-- ── LOGIN PANEL ── -->
+    <div id="loginPanel">
+      <div class="auth-desc">Sign in with the shared access code and your user account.</div>
+      <div class="auth-status" id="authStatus">Enter the shared access code, user ID, and password.</div>
+      <div class="auth-password-wrap">
+        <input class="auth-pass-input with-toggle" id="authPasswordInput" type="password" placeholder="Access code" onkeydown="if(event.key==='Enter') unlockApp()">
+        <button class="auth-password-toggle" type="button" aria-label="Show password" aria-pressed="false" onclick="togglePasswordVisibility('authPasswordInput', this)">
+          <span class="eye-icon eye-open" aria-hidden="true"></span>
+          <span class="eye-icon eye-closed" aria-hidden="true"></span>
+        </button>
+      </div>
+      <input class="auth-pass-input" id="authUserIdInput" type="text" placeholder="User ID" onkeydown="if(event.key==='Enter') unlockApp()">
+      <div class="auth-password-wrap">
+        <input class="auth-pass-input with-toggle" id="authUserPasswordInput" type="password" placeholder="User Password" onkeydown="if(event.key==='Enter') unlockApp()">
+        <button class="auth-password-toggle" type="button" aria-label="Show password" aria-pressed="false" onclick="togglePasswordVisibility('authUserPasswordInput', this)">
+          <span class="eye-icon eye-open" aria-hidden="true"></span>
+          <span class="eye-icon eye-closed" aria-hidden="true"></span>
+        </button>
+      </div>
+      <button class="auth-submit-btn" id="authSignInBtn" type="button" onclick="unlockApp()">Sign In</button>
+      <div class="auth-mode-switch" id="authModeSwitch">
+        Need an account?
+        <button class="auth-link-btn" type="button" onclick="showRegisterMode()">Request account →</button>
+      </div>
+      <div class="auth-foot">The access code protects both the app screen and API requests.</div>
+    </div>
+
+    <!-- ── REGISTER PANEL ── -->
+    <div id="registerPanel" style="display:none">
+      <div class="auth-desc">Enter account details for the shared access code. An admin must approve the request before sign-in.</div>
+      <div class="auth-status" id="registerStatus"></div>
+      <div class="auth-password-wrap">
+        <input class="auth-pass-input with-toggle" id="regAccessCode" type="password" placeholder="Access code" onkeydown="if(event.key==='Enter') submitRegister()">
+        <button class="auth-password-toggle" type="button" aria-label="Show password" aria-pressed="false" onclick="togglePasswordVisibility('regAccessCode', this)">
+          <span class="eye-icon eye-open" aria-hidden="true"></span>
+          <span class="eye-icon eye-closed" aria-hidden="true"></span>
+        </button>
+      </div>
+      <input class="auth-pass-input" id="regUsername" type="text" placeholder="User ID (letters/numbers, 3+ chars)" autocomplete="username" onkeydown="if(event.key==='Enter') submitRegister()">
+      <input class="auth-pass-input" id="regName" type="text" placeholder="Display name" onkeydown="if(event.key==='Enter') submitRegister()">
+      <div class="auth-password-wrap">
+        <input class="auth-pass-input with-toggle" id="regPassword" type="password" placeholder="Password (4+ chars)" autocomplete="new-password" onkeydown="if(event.key==='Enter') submitRegister()">
+        <button class="auth-password-toggle" type="button" aria-label="Show password" aria-pressed="false" onclick="togglePasswordVisibility('regPassword', this)">
+          <span class="eye-icon eye-open" aria-hidden="true"></span>
+          <span class="eye-icon eye-closed" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="auth-password-wrap">
+        <input class="auth-pass-input with-toggle" id="regPasswordConfirm" type="password" placeholder="Confirm password" autocomplete="new-password" onkeydown="if(event.key==='Enter') submitRegister()">
+        <button class="auth-password-toggle" type="button" aria-label="Show password" aria-pressed="false" onclick="togglePasswordVisibility('regPasswordConfirm', this)">
+          <span class="eye-icon eye-open" aria-hidden="true"></span>
+          <span class="eye-icon eye-closed" aria-hidden="true"></span>
+        </button>
+      </div>
+      <button class="auth-submit-btn" id="registerSubmitBtn" type="button" onclick="submitRegister()">Request Account</button>
+      <div class="auth-mode-switch">
+        Already have an account?
+        <button class="auth-link-btn" type="button" onclick="showLoginMode()">← Back to sign in</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: Input -->
+<div class="page active" id="page-form">
+  <div class="user-bar">
+    <div class="user-chip" id="currentUserChip">Author: -</div>
+    <button class="logout-btn" type="button" onclick="logout()" title="Logout">↩ Logout</button>
+  </div>
+  <div class="page-header">
+    <div class="badge">Manufacturing Quality Demo</div>
+    <h1 id="reportTitleMain">Work Completion <span>Report</span></h1>
+    <p class="subtitle" id="reportSubtitle">Fill out the form, then save or copy the formatted report.</p>
+  </div>
+  <!-- Basic Information -->
+  <div class="card">
+    <div class="section-label">Basic Information</div>
+    <div class="field-row full">
+      <div class="field">
+        <span class="flabel">Report Type</span>
+        <div class="report-type-switch">
+          <button class="filter-chip active" type="button" id="reportTypeWorkBtn" onclick="setReportType('work')">Work Completion</button>
+          <button class="filter-chip" type="button" id="reportTypeDefectBtn" onclick="setReportType('defect')">Defect Report</button>
+        </div>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <span class="flabel">Date</span>
+        <input type="date" id="dateInput" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <span class="flabel">Shift</span>
+        <div class="night-chip" id="nightChip" onclick="toggleNight()">
+          <span class="dot"></span><span id="nightLabel">Day</span>
+        </div>
+      </div>
+    </div>
+    <div class="field-row full">
+      <div class="field">
+        <span class="flabel">Time &nbsp;Start → End</span>
+        <div class="time-pair">
+          <input type="text" id="timeStart" inputmode="numeric" placeholder="HH:MM" maxlength="5" oninput="formatTimeInput(this)">
+          <span class="time-sep">—</span>
+          <input type="text" id="timeEnd" inputmode="numeric" placeholder="HH:MM" maxlength="5" oninput="formatTimeInput(this)">
+        </div>
+        <div class="time-duration" id="timeDuration"></div>
+        <div class="form-validation-note" id="formValidationNote" style="display:none"></div>
+      </div>
+    </div>
+    <div class="field-row full">
+      <div class="field">
+        <span class="flabel">Management Number</span>
+        <div class="mgmt-wrap">
+          <div class="num-counter">
+            <button onclick="changeNum(-1)">−</button>
+            <input type="number" id="manageNum" value="1482" min="1" oninput="updatePreview()">
+            <button onclick="changeNum(1)">+</button>
+          </div>
+          <div class="suffix-area">
+            <div class="suffix-chip" id="suffixChip" onclick="toggleSuffix()">
+              <span id="suffixChipLabel">No Suffix</span>
+            </div>
+            <div class="suffix-input-box" id="suffixBox">
+              <span class="par">(</span>
+              <input type="text" id="suffixLetter" value="R" maxlength="20"
+                     oninput="updatePreview()">
+              <span class="par">)</span>
+            </div>
+            <!-- <div class="suffix-presets">
+              <button class="suffix-preset" type="button" onclick="applySuffixPreset('R')">R</button>
+            </div> -->
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="field-row full">
+      <div class="field">
+        <span class="flabel">Process Name</span>
+        <select id="process" onchange="onProcessChange()">
+          <option>Enclosure Feeding</option>
+          <option>BPU Insertion</option>
+          <option>Pack Insertion 1/3</option>
+          <option>Pack Mounting 1/3</option>
+          <option>Pack Insertion 2</option>
+          <option>Pack Mounting 2</option>
+          <option>Branch Pipe Mounting</option>
+          <option>Cabling</option>
+          <option>Leak Test</option>
+          <option>Coolant Injection</option>
+          <option>EOL#1</option>
+          <option selected>EOL#2</option>
+          <option>OQC</option>
+          <option>LINK Output</option>
+          <option value="__custom__">Other (Manual Input)</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row full" id="customProcessField" style="display:none">
+      <div class="field">
+        <span class="flabel">Custom Process Name</span>
+        <input type="text" id="customProcess" placeholder="Enter process name" oninput="updatePreview()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Work Content + AI Polish -->
+  <div class="card">
+    <div class="section-label">Work Content</div>
+    <div style="margin-bottom:10px">
+      <span class="flabel" style="display:block;margin-bottom:5px" id="issueLabel">Issue / Remarks</span>
+      <div class="textarea-wrap">
+        <textarea id="issue" rows="3"
+          placeholder="Example: DC SPD normal check failed" oninput="updatePreview()"></textarea>
+      </div>
+      <div class="polish-row">
+        <div class="lang-btns">
+          <button class="lang-btn active" id="lang-issue-ko" onclick="setFieldLang('issue','ko')">Korean</button>
+          <button class="lang-btn" id="lang-issue-en" onclick="setFieldLang('issue','en')">English</button>
+        </div>
+        <button class="polish-btn" id="polishIssueBtn" onclick="polishField('issue')">
+          ✨ Polish / Translate
+        </button>
+      </div>
+      <div class="suggestion-box" id="issueSuggestion">
+        <div class="suggestion-header">
+          <span class="suggestion-label">✨ AI Suggestion</span>
+          <span id="issueSugLang" style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace"></span>
+        </div>
+        <div class="suggestion-text" id="issueSugText"></div>
+        <div class="suggestion-actions">
+          <button class="sug-apply" onclick="applyPolish('issue')">✓ Apply</button>
+          <button class="sug-discard" onclick="discardPolish('issue')">Discard</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <span class="flabel" style="display:block;margin-bottom:5px" id="actionLabel">Action Taken</span>
+      <div class="textarea-wrap">
+        <textarea id="action" rows="3"
+          placeholder="Example: Reconnected and verified normal operation" oninput="updatePreview()"></textarea>
+      </div>
+      <div class="polish-row">
+        <div class="lang-btns">
+          <button class="lang-btn active" id="lang-action-ko" onclick="setFieldLang('action','ko')">Korean</button>
+          <button class="lang-btn" id="lang-action-en" onclick="setFieldLang('action','en')">English</button>
+        </div>
+        <button class="polish-btn" id="polishActionBtn" onclick="polishField('action')">
+          ✨ Polish / Translate
+        </button>
+      </div>
+      <div class="suggestion-box" id="actionSuggestion">
+        <div class="suggestion-header">
+          <span class="suggestion-label">✨ AI Suggestion</span>
+          <span id="actionSugLang" style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace"></span>
+        </div>
+        <div class="suggestion-text" id="actionSugText"></div>
+        <div class="suggestion-actions">
+          <button class="sug-apply" onclick="applyPolish('action')">✓ Apply</button>
+          <button class="sug-discard" onclick="discardPolish('action')">Discard</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="defectDispositionField" style="display:none;margin-top:10px">
+      <span class="flabel" style="display:block;margin-bottom:5px">Disposition</span>
+      <input type="text" id="defectDisposition" placeholder="Example: Segregated in nonconforming material bin" oninput="updatePreview()">
+    </div>
+
+    <div class="photo-note-wrap">
+      <span class="flabel" style="display:block;margin-bottom:5px">Evidence Photo (Optional)</span>
+      <div class="photo-actions">
+        <label class="btn btn-secondary photo-upload-btn" for="evidencePhotoInput">📷 Add Photo</label>
+        <button class="btn btn-danger photo-remove-btn" id="removePhotoBtn" type="button" onclick="clearEvidencePhoto()" style="display:none">Remove Photo</button>
+      </div>
+      <input id="evidencePhotoInput" type="file" accept="image/*" multiple onchange="handleEvidencePhotoChange(event)" style="display:none">
+      <div class="photo-recommendation" id="photoRecommendationText">Photos are optional. Add one for major issues or visual evidence.</div>
+      <div class="photo-preview-box" id="photoPreviewBox" style="display:none">
+        <div class="photo-preview-grid" id="photoPreviewGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Edit Access</div>
+    <div class="shared-edit-wrap" style="margin-top:0">
+      <label class="shared-edit-card" for="sharedEditCheckbox">
+        <input id="sharedEditCheckbox" class="shared-edit-checkbox" type="checkbox" onchange="updatePreview()">
+        <span class="shared-edit-toggle" aria-hidden="true">
+          <span class="shared-edit-knob"></span>
+        </span>
+        <span class="shared-edit-copy">
+          <span class="shared-edit-title">Allow Shared Edit</span>
+        </span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-card">
+    <div class="preview-header">
+      <span>Preview</span><div class="live-dot"></div>
+    </div>
+    <div class="preview-body" id="preview"></div>
+  </div>
+
+  <div class="btn-group" style="margin-bottom:8px">
+    <button class="btn btn-secondary" onclick="resetForm()">↺ Reset</button>
+    <button class="btn btn-primary" id="copyBtn" onclick="copyText()">📋 Copy</button>
+  </div>
+  <div class="btn-group">
+    <button class="btn btn-json" onclick="saveAndShowJson()">💾 Save + JSON</button>
+    <button class="btn btn-primary" id="saveRecordBtn" onclick="saveRecord(true)">✅ Save Record</button>
+  </div>
+</div>
+
+<!-- PAGE: Records -->
+<div class="page" id="page-records">
+  <div class="records-header">
+    <span class="records-title">Records</span>
+    <span class="records-count" id="recordsCount">0 records</span>
+  </div>
+  <div class="records-tools">
+    <select id="recordsSort" onchange="handleRecordsSortChange()">
+      <option value="recent">Newest</option>
+      <option value="oldest">Oldest</option>
+      <option value="manage">Management No.</option>
+      <option value="process">Process</option>
+    </select>
+    <button class="btn btn-secondary" type="button" id="recordsTrashBtn" onclick="toggleTrashView()">Trash</button>
+  </div>
+  <div class="records-filters">
+    <input type="text" id="recordsSearch" placeholder="Search" oninput="handleRecordsSearchInput(this.value)">
+    <div class="records-filter-chips">
+      <button class="filter-chip active" id="progressFilterAll" type="button" onclick="setProgressFilter('all')">All</button>
+      <button class="filter-chip" id="progressFilterProgress" type="button" onclick="setProgressFilter('progress')">Open</button>
+      <button class="filter-chip" id="progressFilterDone" type="button" onclick="setProgressFilter('done')">Done</button>
+    </div>
+  </div>
+  <div class="records-tools-note" id="recordsRangeNote">Showing the last 2 operational days</div>
+  <div class="records-bulkbar" id="recordsBulkBar">
+    <span class="records-bulktext" id="selectedCountLabel">0 selected</span>
+    <div class="records-bulkactions">
+      <button class="btn btn-secondary" type="button" id="selectAllBtn" style="padding:8px 12px;font-size:12px" onclick="toggleSelectAllRecords()">Select All</button>
+      <button class="btn btn-primary" type="button" id="restoreSelectedBtn" style="padding:8px 12px;font-size:12px;display:none" onclick="restoreSelectedRecords()">Restore</button>
+      <button class="btn btn-danger" type="button" id="deleteSelectedBtn" style="padding:8px 12px;font-size:12px" onclick="deleteSelectedRecords()">Delete</button>
+    </div>
+  </div>
+  <div id="recordsList"></div>
+</div>
+
+<!-- PAGE: Profile -->
+<div class="page" id="page-profile">
+  <div class="records-header">
+    <span class="records-title">Profile</span>
+  </div>
+  <div class="card" id="profileCard" style="padding:20px">
+    <div id="profileContent">Loading...</div>
+  </div>
+</div>
+
+<!-- PAGE: Admin -->
+<div class="page" id="page-admin">
+  <div class="records-header">
+    <span class="records-title">Admin</span>
+  </div>
+  <div class="card admin-export-card" id="exportBar" style="display:none">
+    <div class="section-label">Export</div>
+    <div class="export-bar-label" id="exportBarLabel">Authorized Export</div>
+    <div class="btn-group-3">
+      <button class="btn btn-json" onclick="exportAllJson()">📦 JSON File</button>
+      <button class="btn btn-secondary" onclick="exportExcelCsv('all')">📊 Full Excel</button>
+      <button class="btn btn-secondary" onclick="exportExcelCsv('new')">🆕 New Excel</button>
+      <button class="btn btn-danger" id="clearAllBtn" onclick="clearAll()">🗑 Clear All</button>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:10px;padding:16px">
+    <div class="section-label">Account Approval Requests</div>
+    <div id="adminPageRequestsList" class="records-tools-note">Loading...</div>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<nav class="tab-bar">
+  <button class="tab-btn active" id="tab-form" onclick="switchTab('form')">
+    <span class="icon">✏️</span><span>Input</span>
+  </button>
+  <button class="tab-btn" id="tab-my-records" onclick="switchTab('my-records')">
+    <span class="icon">🧾</span><span>My</span>
+  </button>
+  <button class="tab-btn" id="tab-records" onclick="switchTab('records')">
+    <span class="icon">📋</span><span>All</span>
+  </button>
+  <button class="tab-btn" id="tab-profile" onclick="switchTab('profile')" style="display:none">
+    <span class="icon">👤</span><span>Profile</span>
+  </button>
+  <button class="tab-btn" id="tab-admin" onclick="switchTab('admin')" style="display:none">
+    <span class="icon">🛡️</span><span>Admin</span>
+  </button>
+</nav>
+
+<!-- JSON MODAL -->
+<div class="modal-overlay" id="jsonModal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">JSON Output</span>
+      <button class="modal-close" onclick="closeJsonModal()">✕</button>
+    </div>
+    <div class="json-output" id="jsonOutput"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeJsonModal()">Close</button>
+      <button class="btn btn-json" onclick="copyJson()">📋 Copy JSON</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="./app.js?v=20260411b"></script>
+<script src="./auth.js?v=20260411b"></script>
+<script src="./records.js?v=20260411b"></script>
+<script src="./export.js?v=20260411b"></script>
+<script src="./bootstrap.js?v=20260411b"></script>
+</body>
+</html>

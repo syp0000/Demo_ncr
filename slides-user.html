@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>부동집계 · 유저 사용 가이드</title>
+  <style>
+    :root {
+      --accent: #4f8ef7;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --ios-blue: #007aff;
+      --android-green: #3ddc84;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; padding: 0;
+      background: #141414;
+      color: #e2e2e2;
+      font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Segoe UI', sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+    }
+    h1 { font-size: 2em; font-weight: 700; color: #fff; margin: 0 0 0.2em; line-height: 1.2; }
+    h2 { font-size: 1.35em; font-weight: 600; color: var(--accent); margin: 0 0 0.5em; }
+    h3 { font-size: 1em; color: var(--accent2); margin: 0 0 0.4em; }
+    p { margin: 0 0 0.6em; font-size: 0.88em; line-height: 1.75; }
+    li { font-size: 0.88em; line-height: 1.75; margin-bottom: 4px; }
+    ul { margin: 0; padding-left: 1.2em; }
+    strong { color: #fff; }
+    code { background: #2a2a2a; padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+
+    .top-bar {
+      background: #0e0e0e;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 13px 28px;
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .bar-badge {
+      display: inline-block;
+      background: var(--accent); color: #fff;
+      font-size: 0.62em; padding: 3px 12px;
+      border-radius: 20px; font-weight: 700; letter-spacing: 0.07em;
+    }
+    .bar-title { font-size: 0.78em; color: #666; }
+
+    .page-wrap { max-width: 860px; margin: 0 auto; padding: 28px 20px 80px; }
+
+    .card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 32px 36px;
+      margin-bottom: 16px;
+    }
+    .card.cover {
+      text-align: center; padding: 52px 36px;
+      background: linear-gradient(135deg, rgba(79,142,247,0.08) 0%, rgba(167,139,250,0.06) 100%);
+      border-color: rgba(79,142,247,0.2);
+    }
+
+    .title-badge {
+      display: inline-block;
+      background: var(--accent); color: #fff;
+      font-size: 0.6em; padding: 4px 14px;
+      border-radius: 20px; margin-bottom: 16px;
+      letter-spacing: 0.08em; font-weight: 600;
+    }
+    .title-sub { color: #888; font-size: 0.8em; margin-top: 0.3em; }
+
+    .icon-row { display: flex; justify-content: center; gap: 36px; margin: 24px 0; flex-wrap: wrap; }
+    .icon-item { text-align: center; }
+    .icon-item .icon { font-size: 2.2em; }
+    .icon-item .label { font-size: 0.6em; color: #888; margin-top: 4px; }
+
+    .steps { display: flex; flex-direction: column; gap: 10px; text-align: left; margin-top: 14px; }
+    .step {
+      display: flex; align-items: flex-start; gap: 14px;
+      background: rgba(255,255,255,0.05); border-radius: 10px;
+      padding: 12px 16px; border-left: 4px solid var(--accent);
+    }
+    .step-num {
+      background: var(--accent); color: #fff; font-size: 0.72em; font-weight: 700;
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .step-body { flex: 1; }
+    .step-title { font-size: 0.88em; font-weight: 600; color: #fff; margin-bottom: 3px; }
+    .step-desc { font-size: 0.78em; color: #bbb; line-height: 1.55; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; text-align: left; margin-top: 14px; }
+    .col-box { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 14px 16px; }
+    .col-box h4 { font-size: 0.82em; color: var(--accent); margin: 0 0 8px; }
+    .col-box li { font-size: 0.75em; color: #bbb; }
+
+    .tip-box {
+      background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.3);
+      border-radius: 10px; padding: 12px 16px; font-size: 0.8em; color: #ccc;
+      margin-top: 14px;
+    }
+    .tip-box strong { color: var(--accent2); }
+
+    .warn-box {
+      background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.4);
+      border-radius: 10px; padding: 14px 18px; font-size: 0.8em; color: #fca5a5;
+      margin-top: 14px;
+    }
+    .warn-box strong { color: #f87171; }
+
+    .lock-box {
+      background: rgba(251,191,36,0.08); border: 2px solid rgba(251,191,36,0.35);
+      border-radius: 10px; padding: 14px 18px; margin-top: 14px;
+    }
+    .lock-box h4 { font-size: 0.85em; color: var(--yellow); margin: 0 0 10px; }
+    .lock-fields { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .lock-field {
+      background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.35);
+      border-radius: 6px; padding: 4px 12px; font-size: 0.72em; color: var(--yellow); font-weight: 600;
+    }
+
+    .chip {
+      display: inline-block; padding: 2px 9px; border-radius: 12px;
+      font-size: 0.65em; font-weight: 600; margin-left: 4px; vertical-align: middle;
+    }
+    .chip-green { background: rgba(52,211,153,0.18); color: var(--green); }
+    .chip-yellow { background: rgba(251,191,36,0.18); color: var(--yellow); }
+
+    .platform-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+    .platform-box { border-radius: 12px; padding: 20px 18px; }
+    .platform-box.ios { background: rgba(0,122,255,0.1); border: 2px solid var(--ios-blue); }
+    .platform-box.android { background: rgba(61,220,132,0.08); border: 2px solid var(--android-green); }
+    .platform-box ol { margin: 0; padding-left: 1.3em; }
+    .platform-box li { font-size: 0.78em; color: #ccc; margin-bottom: 5px; line-height: 1.5; }
+    .platform-title { font-size: 0.92em; font-weight: 700; margin-bottom: 10px; }
+    .platform-box.ios .platform-title { color: var(--ios-blue); }
+    .platform-box.android .platform-title { color: var(--android-green); }
+    .platform-note { margin-top: 10px; font-size: 0.7em; }
+
+    .section-sub { color: #888; font-size: 0.78em; margin: 0 0 14px; }
+
+    @media (max-width: 600px) {
+      .two-col, .platform-grid { grid-template-columns: 1fr; }
+      .card { padding: 24px 20px; }
+      .icon-row { gap: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="bar-badge">USER GUIDE</span>
+  <span class="bar-title">부동집계 시스템 · 유저 사용 가이드</span>
+</div>
+
+<div class="page-wrap">
+
+  <!-- 표지 -->
+  <div class="card cover">
+    <div class="title-badge">USER GUIDE</div>
+    <h1>부동집계 시스템</h1>
+    <p class="title-sub">작업 기록 작성 &amp; 공유 앱 사용 설명서</p>
+    <div class="icon-row">
+      <div class="icon-item"><div class="icon">🔐</div><div class="label">로그인</div></div>
+      <div class="icon-item"><div class="icon">✏️</div><div class="label">보고서 작성</div></div>
+      <div class="icon-item"><div class="icon">✨</div><div class="label">AI 다듬기</div></div>
+      <div class="icon-item"><div class="icon">📋</div><div class="label">기록 조회</div></div>
+    </div>
+    <p style="color:#555;font-size:0.6em;margin:0">NCR Assistant · 공정 부동집계 · 유저 가이드</p>
+  </div>
+
+  <!-- 앱 개요 -->
+  <div class="card">
+    <h2>이 앱은 무엇인가요?</h2>
+    <p>공정 작업 중 발생한 부동 내용을 <strong>구조화된 형태로 빠르게 기록</strong>하고, 팀원 전체가 공유 DB에서 조회할 수 있는 웹 앱입니다.</p>
+    <div class="two-col">
+      <div class="col-box">
+        <h4>핵심 기능</h4>
+        <ul>
+          <li>📝 구조화된 입력 폼</li>
+          <li>✨ AI 텍스트 다듬기 (한/영)</li>
+          <li>👁 실시간 미리보기 &amp; 복사</li>
+          <li>💾 공유 DB 저장 &amp; 조회</li>
+          <li>📸 증거 사진 첨부</li>
+        </ul>
+      </div>
+      <div class="col-box">
+        <h4>탭 구성</h4>
+        <ul>
+          <li>✏️ 입력/Input — 보고서 작성</li>
+          <li>📋 내 기록 — 내가 저장한 기록</li>
+          <li>📋 전체 기록 — 팀원 전체 기록</li>
+          <li>👤 내 정보 — 계정 정보 &amp; 로그아웃</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 0 앱 접속 -->
+  <div class="card">
+    <h2>Step 0 · 앱 접속</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">공유받은 링크 열기</div>
+          <div class="step-desc">Vercel URL을 브라우저에서 엽니다. 처음 접속 시 <strong>잠금 화면 (SECURE ACCESS)</strong>이 표시됩니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Access Code 입력</div>
+          <div class="step-desc">팀에서 공유하는 <strong>앱 공용 코드</strong>를 입력 후 「Unlock App」 또는 <code>Enter</code>를 누릅니다. 다음 접속부터는 자동 인증됩니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">개인 로그인</div>
+          <div class="step-desc">User ID와 비밀번호로 로그인합니다. 30일간 자동 로그인이 유지됩니다.</div>
+        </div>
+      </div>
+    </div>
+    <div class="tip-box">
+      <strong>아직 계정이 없다면?</strong> 로그인 화면 하단 「회원가입 요청 →」을 탭하세요.
+    </div>
+  </div>
+
+  <!-- 회원가입 요청 -->
+  <div class="card">
+    <h2>회원가입 요청하기</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">「회원가입 요청 →」 탭</div>
+          <div class="step-desc">로그인 화면 하단 링크를 탭하면 가입 요청 폼이 열립니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">정보 입력</div>
+          <div class="step-desc"><strong>User ID</strong> (영문 소문자/숫자, 3~40자), <strong>이름</strong>, <strong>비밀번호</strong>를 입력하고 「가입 요청 보내기」를 탭합니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">관리자 승인 대기</div>
+          <div class="step-desc">관리자가 승인하면 입력한 ID와 비밀번호로 로그인할 수 있습니다. 승인 전에는 로그인이 불가합니다.</div>
+        </div>
+      </div>
+    </div>
+    <div class="warn-box">
+      <strong>⚠️ 비밀번호를 꼭 기억하세요!</strong><br>
+      비밀번호 찾기 기능이 없습니다. 잊어버리면 <strong>새 ID로 다시 가입 요청</strong>하는 방법밖에 없습니다.<br>
+      메모해두거나 기억하기 쉬운 비밀번호를 사용하세요.
+    </div>
+  </div>
+
+  <!-- Step 1 기본 정보 -->
+  <div class="card">
+    <h2>Step 1 · 기본 정보 입력</h2>
+    <p class="section-sub">「✏️ 입력/Input」 탭 → 상단 카드</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">①</div>
+        <div class="step-body">
+          <div class="step-title">일시 / Date &amp; 야간 여부</div>
+          <div class="step-desc">날짜 선택기에서 작업 날짜를 고릅니다. 야간이면 「야간」 칩을 탭해 활성화합니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">②</div>
+        <div class="step-body">
+          <div class="step-title">시간 / Time</div>
+          <div class="step-desc">시작 시간과 종료 시간을 HH:MM 형식으로 입력하면 소요 시간이 자동 계산됩니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">③</div>
+        <div class="step-body">
+          <div class="step-title">관리번호 / Management No.</div>
+          <div class="step-desc">＋/− 버튼으로 조정하거나 직접 입력. 접미어가 필요하면 괄호 칩을 탭 후 문자를 추가합니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">④</div>
+        <div class="step-body">
+          <div class="step-title">공정명 / Process</div>
+          <div class="step-desc">드롭다운에서 선택. 목록에 없으면 「기타 (직접입력)」 선택 후 직접 입력합니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 작업 내용 & AI -->
+  <div class="card">
+    <h2>Step 2 · 작업 내용 &amp; AI 다듬기</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">①</div>
+        <div class="step-body">
+          <div class="step-title">특이사항 / Remarks</div>
+          <div class="step-desc">발생한 이슈나 점검 결과를 간략히 적습니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">②</div>
+        <div class="step-body">
+          <div class="step-title">조치사항 / Follow-up Actions</div>
+          <div class="step-desc">조치한 내용을 적습니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">③</div>
+        <div class="step-body">
+          <div class="step-title">📸 증거 사진 <span class="chip chip-green">선택</span></div>
+          <div class="step-desc">카메라 촬영 또는 갤러리에서 사진을 첨부할 수 있습니다. 첨부 시 엑셀 내보내기에도 포함됩니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">④</div>
+        <div class="step-body">
+          <div class="step-title">✨ AI 다듬기 <span class="chip chip-yellow">선택</span></div>
+          <div class="step-desc">「한국어」 또는 「English」를 선택 후 「✨ 다듬기」 버튼을 누릅니다. AI가 교정한 문장을 확인하고 <strong>✓ 적용</strong> 또는 취소를 선택합니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3 저장 & 잠금 -->
+  <div class="card">
+    <h2>Step 3 · 저장 &amp; 기록 잠금</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">①</div>
+        <div class="step-body">
+          <div class="step-title">📋 복사 / Copy</div>
+          <div class="step-desc">미리보기 텍스트를 클립보드에 복사합니다. 카카오톡 등에 바로 붙여넣기 가능합니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">②</div>
+        <div class="step-body">
+          <div class="step-title">✅ 기록 저장 / Save Record</div>
+          <div class="step-desc">공유 DB에 저장합니다. 저장 후 팀원 모두가 「전체 기록」 탭에서 조회할 수 있습니다.</div>
+        </div>
+      </div>
+    </div>
+    <div class="lock-box">
+      <h4>🔒 기록이 잠기는 조건</h4>
+      <p style="font-size:0.78em;color:#ccc;margin-bottom:8px">아래 6가지 항목이 <strong style="color:var(--yellow)">모두 입력된 기록</strong>은 저장 후 자동으로 잠깁니다.</p>
+      <div class="lock-fields">
+        <span class="lock-field">날짜 (Date)</span>
+        <span class="lock-field">날짜 표시 (Date Display)</span>
+        <span class="lock-field">시작 시간</span>
+        <span class="lock-field">종료 시간</span>
+        <span class="lock-field">관리번호</span>
+        <span class="lock-field">공정명</span>
+      </div>
+      <p style="font-size:0.72em;color:#aaa;margin-top:10px;margin-bottom:0">잠긴 기록은 수정하려면 <strong>Unlock Code</strong>가 필요합니다. (관리자에게 문의)</p>
+    </div>
+  </div>
+
+  <!-- Step 4 기록 조회 -->
+  <div class="card">
+    <h2>Step 4 · 기록 조회</h2>
+    <div class="two-col">
+      <div class="col-box">
+        <h4>📋 내 기록 탭</h4>
+        <ul>
+          <li>내가 저장한 기록만 표시</li>
+          <li>기본: 최근 기록 최신순</li>
+          <li>검색 · 상태 필터 (All/Open/Done)</li>
+          <li>직접 저장한 기록 수정 가능</li>
+        </ul>
+      </div>
+      <div class="col-box">
+        <h4>📋 전체 기록 탭</h4>
+        <ul>
+          <li>팀원 모두의 기록 표시</li>
+          <li>작성자 이름 표시</li>
+          <li>타인 기록은 조회만 가능</li>
+          <li>관리자는 모든 기록 수정 가능</li>
+        </ul>
+      </div>
+    </div>
+    <div class="steps" style="margin-top:14px">
+      <div class="step">
+        <div class="step-body">
+          <div class="step-title">기록 삭제는 휴지통으로</div>
+          <div class="step-desc">삭제한 기록은 바로 사라지지 않고 <strong>휴지통</strong>으로 이동합니다. 「휴지통/Trash」 버튼으로 확인 &amp; 복구할 수 있습니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 내 정보 탭 -->
+  <div class="card">
+    <h2>👤 내 정보 탭</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-body">
+          <div class="step-title">User ID</div>
+          <div class="step-desc">로그인 중인 계정 ID입니다. 변경할 수 없습니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <div class="step-title">이름 변경</div>
+          <div class="step-desc">표시 이름을 수정하고 「저장」을 눌러 업데이트할 수 있습니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <div class="step-title">로그아웃</div>
+          <div class="step-desc">「↩ 로그아웃」 버튼으로 로그아웃합니다. 다른 기기에서 사용 후 꼭 로그아웃하세요.</div>
+        </div>
+      </div>
+    </div>
+    <div class="warn-box" style="margin-top:14px">
+      <strong>⚠️ 비밀번호를 절대 잊지 마세요</strong><br>
+      비밀번호 찾기·재설정 기능이 없습니다.<br>
+      잊어버리면 <strong>새 ID로 가입 요청</strong>하고 관리자에게 재승인을 받아야 합니다.
+    </div>
+  </div>
+
+  <!-- PWA -->
+  <div class="card">
+    <h2>앱처럼 사용하기 (PWA)</h2>
+    <p class="section-sub">홈 화면에 추가하면 주소창 없이 앱처럼 실행됩니다.</p>
+    <div class="platform-grid">
+      <div class="platform-box ios">
+        <div class="platform-title"> iPhone / iPad</div>
+        <ol>
+          <li><strong>Safari</strong>에서 링크 열기</li>
+          <li>하단 공유 버튼 (□↑) 탭</li>
+          <li>「홈 화면에 추가」 선택</li>
+          <li>「추가」 탭</li>
+        </ol>
+        <div class="platform-note" style="color:#77aaff">⚠️ 반드시 Safari 사용. Chrome 불가.</div>
+      </div>
+      <div class="platform-box android">
+        <div class="platform-title">🤖 Android</div>
+        <ol>
+          <li><strong>Chrome</strong>에서 링크 열기</li>
+          <li>우측 상단 ⋮ 메뉴 탭</li>
+          <li>「홈 화면에 추가」 또는 「앱 설치」</li>
+          <li>「추가」 확인</li>
+        </ol>
+        <div class="platform-note" style="color:#5dbd8a">💡 설치 배너가 자동으로 뜨면 바로 「설치」 탭.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="card">
+    <h2>자주 묻는 질문</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-body">
+          <div class="step-title">Q. 비밀번호를 잊었어요.</div>
+          <div class="step-desc">재설정 기능이 없습니다. <strong>새 ID로 다시 가입 요청</strong>하고 관리자에게 승인을 요청하세요.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <div class="step-title">Q. 내 기록이 안 보여요.</div>
+          <div class="step-desc">「내 기록」 탭에서 검색하거나 정렬 순서를 변경해보세요. 최근 기록 위주로 표시됩니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <div class="step-title">Q. 기록이 잠겨서 수정이 안 돼요.</div>
+          <div class="step-desc">날짜·시간·관리번호·공정명이 모두 입력된 기록은 자동 잠금됩니다. 수정이 필요하면 <strong>관리자에게 Unlock Code를 요청</strong>하세요.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <div class="step-title">Q. AI 다듬기가 작동 안 해요.</div>
+          <div class="step-desc">인터넷 연결 상태를 확인하세요. 텍스트 필드가 비어있으면 실행되지 않습니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 마무리 -->
+  <div class="card cover" style="background:linear-gradient(135deg,rgba(52,211,153,0.08),rgba(79,142,247,0.06));border-color:rgba(52,211,153,0.2)">
+    <div class="title-badge" style="background:var(--green);color:#000">READY</div>
+    <h1 style="font-size:1.8em">이제 바로 시작하세요!</h1>
+    <div class="icon-row" style="margin:24px 0">
+      <div class="icon-item"><div class="icon">📲</div><div class="label">링크 접속</div></div>
+      <div class="icon-item"><div class="icon">🔐</div><div class="label">로그인</div></div>
+      <div class="icon-item"><div class="icon">✏️</div><div class="label">기록 작성</div></div>
+      <div class="icon-item"><div class="icon">💾</div><div class="label">저장 완료</div></div>
+    </div>
+    <div class="warn-box" style="text-align:center">
+      <strong>⚠️ 비밀번호 메모 필수</strong> — 찾기 기능 없음. 잊으면 새 계정으로 재가입.
+    </div>
+    <p style="color:#444;font-size:0.6em;margin:20px 0 0">NCR Assistant · 부동집계 · 유저 가이드 · 2026</p>
+  </div>
+
+</div>
+</body>
+</html>

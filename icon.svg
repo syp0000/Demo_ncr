@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#0f1117"/>
+  <rect x="60" y="60" width="392" height="392" rx="48" fill="#1a1d27" stroke="#2e3248" stroke-width="8"/>
+  <text x="256" y="200" text-anchor="middle" font-family="monospace" font-size="90" font-weight="bold" fill="#4f8cff">부동</text>
+  <text x="256" y="310" text-anchor="middle" font-family="monospace" font-size="90" font-weight="bold" fill="#38e2a0">집계</text>
+  <rect x="120" y="340" width="272" height="6" rx="3" fill="#2e3248"/>
+  <rect x="120" y="370" width="200" height="6" rx="3" fill="#2e3248"/>
+</svg>
