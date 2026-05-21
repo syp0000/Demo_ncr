@@ -6,6 +6,22 @@ NCR Assistant turns a short shop-floor form into a consistent report entry, supp
 
 This public version is sanitized for portfolio and GitHub use. It uses generic sample language and keeps secrets, deployment IDs, and private data out of the repository.
 
+## Demo Project vs Real Project
+
+The real project lives in `NCR_automation`. This folder, `Demo_ncr`, is the public/demo version made for safe sharing.
+
+Main differences:
+
+- The real project keeps the internal Korean-first production wording. The demo changes most visible UI text to English and uses generic manufacturing language.
+- The real project is intended to use real deployment environment variables, a shared PostgreSQL database, export authorization, and live AI polishing. The demo is configured around demo-safe variables and can run without private services.
+- The demo adds `lib/demo-polish.js`, which returns a clearly marked local demo suggestion when `ANTHROPIC_API_KEY` is not set. This keeps the polish/translate buttons usable in a public demo.
+- The demo README documents browser local-storage fallback so visitors can try the app without connecting to a shared database.
+- Private/internal guide decks and slide HTML files from `NCR_automation` are not included here.
+- The demo includes Vercel helper scripts for preview and production deploy commands.
+- Both versions keep the same core product flow: mobile PWA, report form, preview/copy/save, Korean/English polish, user/admin access, edit history, photo evidence, and Excel export.
+
+In short: `NCR_automation` is the real operational app; `Demo_ncr` is the sanitized shareable version for GitHub, portfolio review, and public testing.
+
 ## Highlights
 
 - Mobile-first Progressive Web App that can be installed from the browser home screen
