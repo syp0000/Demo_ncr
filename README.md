@@ -35,6 +35,38 @@ In short: `NCR_automation` is the real operational app; `Demo_ncr` is the saniti
 - Evidence photo attachment with client-side image compression
 - Excel export with grouped process rows, standard-time comparison, embedded photos, and export audit logging
 
+## Project Layout
+
+```
+index.html            markup and the inline event handlers
+app.js                form state, preview, photo handling, profile page
+auth.js               sign-in, registration, session, export authorization
+records.js            record list, grouping, admin page
+export.js             JSON / CSV / Excel export
+bootstrap.js          startup sequence
+api/                  one Vercel serverless function per file
+lib/http.js           route() — CORS, method allow-list, auth, error handling
+lib/record-rules.js   scheduling rules (pure, unit-tested)
+lib/db.js             Postgres pool
+lib/auth.js           shared access code
+lib/user-auth.js      per-user accounts and JWT sessions
+db/schema.sql         the whole schema; idempotent, safe to re-run
+test/                 node:test unit tests
+```
+
+Every endpoint is wrapped in `route()`, which applies CORS, rejects unsupported
+methods, enforces the access level (`open` / `app` / `user` / `admin`), checks
+for a database when one is required, and turns thrown errors into responses.
+Handlers only contain what is specific to them.
+
+## Tests
+
+```bash
+npm test
+```
+
+No test framework — `node:test` and `node:assert` from the standard library.
+
 ## Tech Stack
 
 - HTML, CSS, and vanilla JavaScript
@@ -94,7 +126,15 @@ ANTHROPIC_API_KEY=your_api_key_here
 DATABASE_URL=postgres://user:password@host:5432/database
 ```
 
-Then run the SQL in [db/schema.sql](db/schema.sql).
+Then run [db/schema.sql](db/schema.sql) against it:
+
+```bash
+psql "$DATABASE_URL" -f db/schema.sql
+```
+
+The application does not create or alter tables at runtime, so this has to be
+run once before the first deploy and again after any schema change. The file is
+idempotent, so re-running it against an existing database is safe.
 
 ## Optional User Login
 

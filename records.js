@@ -1,4 +1,3 @@
-// ── RECORDS MODULE ──
 let openPhotoRecordIds = [];
 let openHistoryRecordIds = [];
 let historyCache = {};
@@ -228,19 +227,13 @@ function sortRecords(records) {
   return sorted;
 }
 
+// Callers pass records already narrowed by getScopedRecordsSource(), so the
+// My/All tab selection is not re-applied here.
 function applyRecordsFilters(records) {
   const query = recordsSearchQuery.trim().toLowerCase();
   return records.filter(record => {
     if (recordsProgressFilter === 'progress' && record.time_end) return false;
     if (recordsProgressFilter === 'done' && !record.time_end) return false;
-
-    if (recordsScopeTab === 'mine' && currentUser) {
-      const me = String(currentUser.id || '');
-      const isAuthor = String(record.author_id || '') === me;
-      const isEditor = String(record.editor_id || '') === me;
-      if (!isAuthor && !isEditor) return false;
-    }
-
     if (!query) return true;
     const haystack = [
       record.manage_no,
@@ -681,7 +674,6 @@ async function saveAndShowJson() {
   showToast('💾 Saved + JSON ready');
 }
 
-// ── JSON MODAL ──
 let currentJsonStr = '';
 function openJsonModal(str) {
   currentJsonStr = str;
@@ -692,7 +684,6 @@ function closeJsonModal() { document.getElementById('jsonModal').classList.remov
 function closeModal(e) { if (e.target === document.getElementById('jsonModal')) closeJsonModal(); }
 async function copyJson() { await doClipboard(currentJsonStr); showToast('✓ JSON copied'); }
 
-// ── RENDER RECORDS ──
 function renderRecords() {
   const allRecords = getRecords();
   const scopeRecords = getScopedRecordsSource(allRecords);
@@ -727,10 +718,10 @@ function renderRecords() {
   }
 
   if (recordsSortMode === 'process') {
-    const groupedByProcess = groupRecordsByProcessOverview(visibleRecords);
+    const groupedByProcess = groupRecordsTwoLevel(visibleRecords, byProcess, byManageNo);
     openManageGroups = openManageGroups.filter(key => groupedByProcess.some(group => group.key === key));
     if (!openManageGroups.length) openManageGroups = groupedByProcess.map(group => group.key);
-    const availableManageKeys = groupedByProcess.flatMap(group => group.manageGroups.map(manageGroup => manageGroup.key));
+    const availableManageKeys = groupedByProcess.flatMap(group => group.children.map(manageGroup => manageGroup.key));
     openProcessGroups = openProcessGroups.filter(key => availableManageKeys.includes(key));
     if (!openProcessGroups.length) openProcessGroups = availableManageKeys;
 
@@ -738,8 +729,8 @@ function renderRecords() {
       <div class="record-group">
         <button class="record-group-header ${openManageGroups.includes(group.key) ? 'open' : ''}" type="button" onclick="toggleManageGroup('${esc(group.key)}')">
           <div class="record-group-main">
-            <span class="record-group-title">${esc(group.process)}</span>
-            <span class="record-group-sub">${group.manageGroups.length} management numbers · Latest time: ${esc(group.latest.date_display)} ${esc(group.latest.time_start || '')}</span>
+            <span class="record-group-title">${esc(group.label)}</span>
+            <span class="record-group-sub">${group.children.length} management numbers · Latest time: ${esc(group.latest.date_display)} ${esc(group.latest.time_start || '')}</span>
           </div>
           <div class="record-group-meta">
             <span class="record-group-chip">${group.records.length} records</span>
@@ -748,15 +739,15 @@ function renderRecords() {
           </div>
         </button>
         <div class="record-group-items ${openManageGroups.includes(group.key) ? 'open' : ''}">
-          ${group.manageGroups.map(manageGroup => `
+          ${group.children.map(manageGroup => `
           <div class="process-group">
             <button class="process-group-header ${openProcessGroups.includes(manageGroup.key) ? 'open' : ''}" type="button" onclick="toggleProcessGroup(event, '${esc(manageGroup.key)}')">
               <div class="process-group-main">
-                <span class="process-group-title">#${esc(manageGroup.manageNo)}</span>
+                <span class="process-group-title">#${esc(manageGroup.label)}</span>
                 <span class="process-group-sub">Latest time: ${esc(manageGroup.latest.date_display)} ${esc(manageGroup.latest.time_start || '')}</span>
               </div>
               <div class="process-group-meta">
-                <button class="btn btn-primary" type="button" style="padding:6px 10px;font-size:11px;border-radius:8px" onclick="startNewRecordFromManage(event, '${esc(manageGroup.manageNo)}')">Use No.</button>
+                <button class="btn btn-primary" type="button" style="padding:6px 10px;font-size:11px;border-radius:8px" onclick="startNewRecordFromManage(event, '${esc(manageGroup.label)}')">Use No.</button>
                 <span class="record-group-chip">${manageGroup.records.length} records</span>
                 <span class="record-group-arrow">${openProcessGroups.includes(manageGroup.key) ? '▲' : '▼'}</span>
               </div>
@@ -770,10 +761,10 @@ function renderRecords() {
     return;
   }
 
-  const grouped = groupRecordsByManageNo(visibleRecords);
+  const grouped = groupRecordsTwoLevel(visibleRecords, byManageNo, byProcess);
   openManageGroups = openManageGroups.filter(key => grouped.some(group => group.key === key));
   if (!openManageGroups.length) openManageGroups = grouped.map(group => group.key);
-  const availableProcessKeys = grouped.flatMap(group => group.processGroups.map(processGroup => processGroup.key));
+  const availableProcessKeys = grouped.flatMap(group => group.children.map(processGroup => processGroup.key));
   openProcessGroups = openProcessGroups.filter(key => availableProcessKeys.includes(key));
   if (!openProcessGroups.length) openProcessGroups = availableProcessKeys;
 
@@ -781,12 +772,12 @@ function renderRecords() {
     <div class="record-group">
       <button class="record-group-header ${openManageGroups.includes(group.key) ? 'open' : ''}" type="button" onclick="toggleManageGroup('${esc(group.key)}')">
         <div class="record-group-main">
-          <span class="record-group-title">#${esc(group.manageNo)}</span>
+          <span class="record-group-title">#${esc(group.label)}</span>
           <span class="record-group-sub">Latest process: ${esc(group.latest.process)} · Latest time: ${esc(group.latest.date_display)} ${esc(group.latest.time_start || '')}</span>
         </div>
         <div class="record-group-meta">
           <div class="record-group-actions">
-            <button class="btn btn-primary" type="button" style="padding:6px 10px;font-size:11px;border-radius:8px" onclick="startNewRecordFromManage(event, '${esc(group.manageNo)}')">Use No.</button>
+            <button class="btn btn-primary" type="button" style="padding:6px 10px;font-size:11px;border-radius:8px" onclick="startNewRecordFromManage(event, '${esc(group.label)}')">Use No.</button>
           </div>
           <span class="record-group-chip">${group.records.length} process records</span>
           <span class="record-group-chip">Current ${esc(group.latest.process)}</span>
@@ -794,11 +785,11 @@ function renderRecords() {
         </div>
       </button>
       <div class="record-group-items ${openManageGroups.includes(group.key) ? 'open' : ''}">
-        ${group.processGroups.map(processGroup => `
+        ${group.children.map(processGroup => `
         <div class="process-group">
           <button class="process-group-header ${openProcessGroups.includes(processGroup.key) ? 'open' : ''}" type="button" onclick="toggleProcessGroup(event, '${esc(processGroup.key)}')">
             <div class="process-group-main">
-              <span class="process-group-title">${esc(processGroup.process)}</span>
+              <span class="process-group-title">${esc(processGroup.label)}</span>
               <span class="process-group-sub">Latest time: ${esc(processGroup.latest.date_display)} ${esc(processGroup.latest.time_start || '')}</span>
             </div>
             <div class="process-group-meta">
@@ -1003,63 +994,29 @@ async function changeUserNameFromAdmin(userId, currentName) {
   renderAdminPage();
 }
 
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function groupRecordsByManageNo(records) {
+const byManageNo = (record) => String(record.manage_no || '').trim() || 'unknown';
+const byProcess = (record) => String(record.process || '').trim() || '(Process)';
+
+/** Groups records under a key, keeping first-seen order so the caller's sort survives. */
+function groupBy(records, keyOf) {
   const groups = new Map();
-  records.forEach(record => {
-    const key = String(record.manage_no || '').trim() || 'unknown';
+  for (const record of records) {
+    const key = keyOf(record);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(record);
-  });
-  return [...groups.entries()].map(([key, groupRecords]) => ({
-    key,
-    manageNo: key,
-    latest: groupRecords[0],
-    records: groupRecords,
-    processGroups: groupRecordsByProcess(key, groupRecords)
-  }));
+  }
+  return [...groups.entries()].map(([key, items]) => ({ key, label: key, latest: items[0], records: items }));
 }
-function groupRecordsByProcess(manageKey, records) {
-  const groups = new Map();
-  records.forEach(record => {
-    const key = String(record.process || '').trim() || '(Process)';
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(record);
-  });
-  return [...groups.entries()].map(([process, processRecords]) => ({
-    key: `${manageKey}__${process}`,
-    process,
-    latest: processRecords[0],
-    records: processRecords
-  }));
-}
-function groupRecordsByProcessOverview(records) {
-  const groups = new Map();
-  records.forEach(record => {
-    const key = String(record.process || '').trim() || '(Process)';
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(record);
-  });
-  return [...groups.entries()].map(([process, processRecords]) => ({
-    key: process,
-    process,
-    latest: processRecords[0],
-    records: processRecords,
-    manageGroups: groupRecordsByManageWithinProcess(process, processRecords)
-  }));
-}
-function groupRecordsByManageWithinProcess(processKey, records) {
-  const groups = new Map();
-  records.forEach(record => {
-    const key = String(record.manage_no || '').trim() || 'unknown';
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(record);
-  });
-  return [...groups.entries()].map(([manageNo, manageRecords]) => ({
-    key: `${processKey}__${manageNo}`,
-    manageNo,
-    latest: manageRecords[0],
-    records: manageRecords
+
+/**
+ * Two-level grouping for the records list — management number over process, or
+ * the other way round. Child keys carry the parent key as a prefix so the two
+ * levels can be expanded and collapsed independently.
+ */
+function groupRecordsTwoLevel(records, outerOf, innerOf) {
+  return groupBy(records, outerOf).map((outer) => ({
+    ...outer,
+    children: groupBy(outer.records, innerOf).map((inner) => ({ ...inner, key: `${outer.key}__${inner.key}` }))
   }));
 }
 function toggleManageGroup(key) {

@@ -1,10 +1,7 @@
 import { getPublicAuthConfig } from '../lib/auth.js';
+import { route } from '../lib/http.js';
 
-export default function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-App-Password');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-  return res.status(200).json(getPublicAuthConfig());
-}
+export default route(
+  { name: 'auth-config', methods: ['GET'], access: 'open' },
+  (req, res) => res.status(200).json(getPublicAuthConfig())
+);

@@ -3,16 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --test 'test/**/*.test.js'",
     "deploy:preview": "vercel deploy",
     "deploy:prod": "vercel --prod"
   },
   "dependencies": {
     "exceljs": "^4.4.0",
     "jose": "^5.9.6",
-    "pg": "^8.13.1",
-    "reveal.js": "^6.0.0"
-  },
-  "devDependencies": {
-    "decktape": "^3.15.0"
+    "pg": "^8.13.1"
   }
 }

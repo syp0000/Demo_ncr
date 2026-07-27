@@ -1,4 +1,3 @@
-// ── BOOTSTRAP ──
 syncSaveButton();
 initDefaults();
 initializeAuth().then(() => {

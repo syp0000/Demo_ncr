@@ -1,35 +1,6 @@
 import ExcelJS from 'exceljs';
-import { hasDatabaseConfig, query } from '../lib/db.js';
-import { requireAppPassword } from '../lib/auth.js';
-import { requireUserAuth } from '../lib/user-auth.js';
-
-let schemaEnsured = false;
-
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-App-Password, X-User-Token');
-}
-
-async function ensureSchema() {
-  if (schemaEnsured) return;
-  await query(`
-    CREATE TABLE IF NOT EXISTS export_audit (
-      id BIGSERIAL PRIMARY KEY,
-      export_type TEXT NOT NULL,
-      export_mode TEXT NOT NULL DEFAULT 'all',
-      record_count INTEGER NOT NULL DEFAULT 0,
-      actor_id TEXT NOT NULL,
-      actor_name TEXT NOT NULL,
-      actor_role TEXT NOT NULL,
-      actor_is_env_admin BOOLEAN NOT NULL DEFAULT FALSE,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
-  await query(`CREATE INDEX IF NOT EXISTS idx_export_audit_created_at ON export_audit (created_at DESC)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_export_audit_actor_id ON export_audit (actor_id, created_at DESC)`);
-  schemaEnsured = true;
-}
+import { query } from '../lib/db.js';
+import { route } from '../lib/http.js';
 
 function normalizeExportType(value) {
   const text = String(value || '').trim().toLowerCase();
@@ -497,85 +468,68 @@ async function buildWorkbook(records) {
   return workbook;
 }
 
-export default async function handler(req, res) {
-  setCors(res);
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
-  if (!requireAppPassword(req, res)) return;
-  const currentUser = await requireUserAuth(req, res);
-  if (!currentUser) return;
-  if (!hasDatabaseConfig()) {
-    return res.status(503).json({ error: 'Database not configured' });
+/** GET — the export audit log. Restricted to admins pinned via APP_USERS_JSON. */
+async function readAuditLog(req, res, user) {
+  if (!user.isEnvAdmin) {
+    return res.status(403).json({ error: 'Forbidden', detail: 'Only environment-configured admins can view export audit history.' });
   }
-
-  try {
-    await ensureSchema();
-
-    if (req.method === 'GET') {
-      if (!currentUser.isEnvAdmin) {
-        return res.status(403).json({ error: 'Forbidden', detail: 'Only environment-configured admins can view export audit history.' });
-      }
-
-      const limit = Math.min(Math.max(Number.parseInt(req.query?.limit, 10) || 50, 1), 200);
-      const auditResult = await query(`
-        SELECT id, export_type, export_mode, record_count, actor_id, actor_name, actor_role, actor_is_env_admin, created_at
-        FROM export_audit
-        ORDER BY created_at DESC, id DESC
-        LIMIT $1
-      `, [limit]);
-      return res.status(200).json({ audits: auditResult.rows });
-    }
-
-    if (String(req.query?.action || '').trim().toLowerCase() === 'audit') {
-      const exportType = normalizeExportType(req.body?.exportType);
-      const exportMode = normalizeExportMode(req.body?.exportMode);
-      const recordCount = Math.max(0, Number.parseInt(req.body?.recordCount, 10) || 0);
-
-      const auditInsert = await query(`
-        INSERT INTO export_audit (
-          export_type, export_mode, record_count,
-          actor_id, actor_name, actor_role, actor_is_env_admin
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id, export_type, export_mode, record_count, actor_id, actor_name, actor_role, actor_is_env_admin, created_at
-      `, [
-        exportType,
-        exportMode,
-        recordCount,
-        String(currentUser.id || ''),
-        String(currentUser.name || ''),
-        String(currentUser.role || 'user'),
-        currentUser.isEnvAdmin === true
-      ]);
-
-      return res.status(200).json({ ok: true, audit: auditInsert.rows[0] });
-    }
-
-    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String).filter(Boolean) : [];
-    if (!ids.length) return res.status(400).json({ error: 'No records selected for export' });
-
-    const result = await query(`
-      SELECT id, recorded_at, deleted_at, date, date_display, shift, time_start, time_end,
-             manage_no, process, issue, action, text, author_id, author_name,
-             editor_id, editor_name, photo_data, photo_name
-      FROM records
-      WHERE id = ANY($1::text[])
-        AND deleted_at IS NULL
-    `, [ids]);
-
-    const rowsById = new Map(result.rows.map((row) => [String(row.id), row]));
-    const orderedRecords = ids.map((id) => rowsById.get(String(id))).filter(Boolean);
-    const workbook = await buildWorkbook(orderedRecords);
-
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="ncr-export.xlsx"');
-    res.setHeader('Cache-Control', 'no-store');
-    res.statusCode = 200;
-    await workbook.xlsx.write(res);
-    return res.end();
-  } catch (error) {
-    console.error('[export-xlsx]', error);
-    return res.status(500).json({ error: 'Export failed', detail: error.message });
-  }
+  const limit = Math.min(Math.max(Number.parseInt(req.query?.limit, 10) || 50, 1), 200);
+  const result = await query(`
+    SELECT id, export_type, export_mode, record_count, actor_id, actor_name, actor_role, actor_is_env_admin, created_at
+    FROM export_audit
+    ORDER BY created_at DESC, id DESC
+    LIMIT $1
+  `, [limit]);
+  return res.status(200).json({ audits: result.rows });
 }
+
+/** POST ?action=audit — records that an export happened, including the CSV and JSON ones. */
+async function writeAuditEntry(req, res, user) {
+  const result = await query(`
+    INSERT INTO export_audit (export_type, export_mode, record_count, actor_id, actor_name, actor_role, actor_is_env_admin)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    RETURNING id, export_type, export_mode, record_count, actor_id, actor_name, actor_role, actor_is_env_admin, created_at
+  `, [
+    normalizeExportType(req.body?.exportType),
+    normalizeExportMode(req.body?.exportMode),
+    Math.max(0, Number.parseInt(req.body?.recordCount, 10) || 0),
+    String(user.id || ''),
+    String(user.name || ''),
+    String(user.role || 'user'),
+    user.isEnvAdmin === true
+  ]);
+  return res.status(200).json({ ok: true, audit: result.rows[0] });
+}
+
+/** POST — streams the workbook for the requested record ids, in the order given. */
+async function streamWorkbook(req, res) {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String).filter(Boolean) : [];
+  if (!ids.length) return res.status(400).json({ error: 'No records selected for export' });
+
+  const result = await query(`
+    SELECT id, recorded_at, deleted_at, date, date_display, shift, time_start, time_end,
+           manage_no, process, issue, action, text, author_id, author_name,
+           editor_id, editor_name, photo_data, photo_name
+    FROM records
+    WHERE id = ANY($1::text[]) AND deleted_at IS NULL
+  `, [ids]);
+
+  const byId = new Map(result.rows.map((row) => [String(row.id), row]));
+  const workbook = await buildWorkbook(ids.map((id) => byId.get(id)).filter(Boolean));
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="ncr-export.xlsx"');
+  res.setHeader('Cache-Control', 'no-store');
+  res.statusCode = 200;
+  await workbook.xlsx.write(res);
+  return res.end();
+}
+
+export default route(
+  { name: 'export-xlsx', methods: ['GET', 'POST'], headers: ['X-User-Token'], access: 'user', db: true },
+  (req, res, user) => {
+    if (req.method === 'GET') return readAuditLog(req, res, user);
+    if (String(req.query?.action || '').trim().toLowerCase() === 'audit') return writeAuditEntry(req, res, user);
+    return streamWorkbook(req, res);
+  }
+);
