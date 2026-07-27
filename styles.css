@@ -21,7 +21,7 @@ body {
   background: var(--bg); color: var(--text);
   font-family: 'Noto Sans KR', sans-serif;
   height: 100%;
-  overflow: hidden; /* 바디 스크롤 막기 → 탭바 고정 */
+  overflow: hidden; /* tab bar stays fixed; the pages scroll, not the body */
   overflow-x: hidden;
 }
 body::before {
@@ -236,13 +236,7 @@ textarea { resize: none; line-height: 1.6; }
 }
 .suffix-preset:hover { border-color: var(--accent); color: var(--accent); }
 
-/* ── AI POLISH ── */
-.ai-section-header {
-  display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
-}
-.ai-lang-switcher {
-  display: flex; gap: 4px;
-}
+/* AI POLISH */
 .lang-btn {
   background: var(--surface2); border: 1px solid var(--border);
   border-radius: 7px; color: var(--text3); font-size: 11px; font-weight: 600;
@@ -422,11 +416,6 @@ textarea { resize: none; line-height: 1.6; }
   color: var(--text);
   letter-spacing: -0.02em;
 }
-.shared-edit-subtitle {
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--text3);
-}
 .shared-edit-checkbox:checked + .shared-edit-toggle {
   background: linear-gradient(135deg, rgba(79,140,255,0.92), rgba(96,165,250,0.78));
   border-color: rgba(147,197,253,0.82);
@@ -441,9 +430,6 @@ textarea { resize: none; line-height: 1.6; }
 }
 .shared-edit-checkbox:checked ~ .shared-edit-copy .shared-edit-title {
   color: #eef4ff;
-}
-.shared-edit-checkbox:checked ~ .shared-edit-copy .shared-edit-subtitle {
-  color: rgba(226,236,255,0.82);
 }
 .record-photo-toggle {
   font-size: 11px;
@@ -470,7 +456,7 @@ textarea { resize: none; line-height: 1.6; }
   display: block;
 }
 
-/* ── Record History ── */
+/* Record History */
 .record-history-wrap {
   margin-top: 10px;
   border-top: 1px solid var(--border);
@@ -596,22 +582,6 @@ textarea { resize: none; line-height: 1.6; }
 .btn-json:hover { background: rgba(56,226,160,0.25); }
 .btn-danger { background: rgba(255,107,107,0.15); color: var(--red); border: 1px solid rgba(255,107,107,0.3); }
 .btn-danger:hover { background: rgba(255,107,107,0.25); }
-
-.info-note {
-  margin-top: 10px;
-  background: rgba(79,140,255,0.08);
-  border: 1px solid rgba(79,140,255,0.22);
-  border-radius: 12px;
-  padding: 11px 12px;
-  font-size: 11px;
-  line-height: 1.6;
-  color: var(--text2);
-}
-
-.info-note strong {
-  color: var(--accent);
-  font-weight: 700;
-}
 
 /* RECORDS */
 .records-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
@@ -936,11 +906,6 @@ textarea { resize: none; line-height: 1.6; }
   margin-left: 6px; font-weight: 600; background: rgba(255,179,71,0.15);
   color: var(--yellow); border: 1px solid rgba(255,179,71,0.3);
 }
-.record-del {
-  position: absolute; top: 10px; right: 10px; background: none; border: none;
-  cursor: pointer; color: var(--text3); font-size: 16px; padding: 4px; border-radius: 6px; transition: color 0.15s, background 0.15s;
-}
-.record-del:hover { color: var(--red); background: rgba(255,107,107,0.1); }
 .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
 .empty-state .big { font-size: 40px; margin-bottom: 12px; }
 .empty-state p { font-size: 13px; line-height: 1.7; }

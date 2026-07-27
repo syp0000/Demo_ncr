@@ -1,4 +1,3 @@
-// ── EXPORT MODULE ──
 async function logExportAudit({ exportType, exportMode = 'all', recordCount = 0 }) {
   try {
     await apiFetch('/api/export-xlsx?action=audit', {
@@ -171,15 +170,6 @@ async function exportExcelCsv(mode = 'all') {
 
   const cursorLabel = mode === 'new' ? 'New' : 'Full';
   showToast(`✓ ${cursorLabel} Excel saved (${targetRecords.length} records)`);
-}
-
-async function exportAllText() {
-  if (!await ensureExportAuthorization()) return;
-  await loadRecords();
-  const arr = getScopedRecordsSource(getRecords());
-  await doClipboard(arr.map((record) => record.text).join('\n\n─────────────────\n\n'));
-  await logExportAudit({ exportType: 'text', exportMode: 'all', recordCount: arr.length });
-  showToast(`✓ Full text copied (${arr.length} records)`);
 }
 
 async function clearAll() {

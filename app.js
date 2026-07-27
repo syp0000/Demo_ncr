@@ -1,4 +1,3 @@
-// ── STATE ──
 let isNight = false;
 let hasSuffix = false;
 const fieldLang = { issue: 'ko', action: 'ko' };
@@ -101,7 +100,6 @@ function getOperationalDate(now = new Date()) {
   return basis;
 }
 
-// ── INIT ──
 function initDefaults() {
   const now = new Date();
   document.getElementById('dateInput').value = toLocalDateInputValue(getOperationalDate(now));
@@ -112,7 +110,6 @@ function initDefaults() {
   updatePreview();
 }
 
-// ── TAB ──
 async function switchTab(name) {
   if (name === 'my-records') recordsScopeTab = 'mine';
   else if (name === 'records') recordsScopeTab = 'all';
@@ -136,7 +133,6 @@ async function switchTab(name) {
   }
 }
 
-// ── NIGHT ──
 function toggleNight() {
   isNight = !isNight;
   document.getElementById('nightChip').classList.toggle('active', isNight);
@@ -144,7 +140,6 @@ function toggleNight() {
   updatePreview();
 }
 
-// ── SUFFIX ──
 function toggleSuffix() {
   hasSuffix = !hasSuffix;
   document.getElementById('suffixChip').classList.toggle('active', hasSuffix);
@@ -153,23 +148,12 @@ function toggleSuffix() {
   updatePreview();
 }
 
-function applySuffixPreset(value) {
-  hasSuffix = true;
-  document.getElementById('suffixLetter').value = value;
-  document.getElementById('suffixChip').classList.add('active');
-  document.getElementById('suffixChipLabel').textContent = 'Suffix On';
-  document.getElementById('suffixBox').classList.add('show');
-  updatePreview();
-}
-
-// ── NUM ──
 function changeNum(delta) {
   const inp = document.getElementById('manageNum');
   inp.value = Math.max(1, parseInt(inp.value || 1) + delta);
   updatePreview();
 }
 
-// ── PROCESS ──
 function onProcessChange() {
   const val = document.getElementById('process').value;
   document.getElementById('customProcessField').style.display = val === '__custom__' ? 'block' : 'none';
@@ -499,7 +483,6 @@ async function handleEvidencePhotoChange(event) {
   }
 }
 
-// ── LANG ──
 function setFieldLang(field, lang) {
   fieldLang[field] = lang;
   ['ko','en'].forEach(l => {
@@ -513,7 +496,6 @@ function setFieldLang(field, lang) {
   if (raw) polishField(field);
 }
 
-// ── AI POLISH ──
 async function polishField(field) {
   const textarea = document.getElementById(field);
   const raw = textarea.value.trim();
@@ -526,8 +508,7 @@ async function polishField(field) {
 
   try {
     const lang = fieldLang[field];
-    const endpoint = lang === 'en' ? '/api/polish-en' : '/api/polish-ko';
-    const res = await apiFetch(endpoint, {
+    const res = await apiFetch('/api/polish', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: raw, field, lang })
@@ -569,7 +550,6 @@ function discardPolish(field) {
   polishSuggestions[field] = '';
 }
 
-// ── FORM DATA ──
 function getFormData() {
   const dateVal = document.getElementById('dateInput').value;
   const [y, m, d] = dateVal ? dateVal.split('-') : ['','',''];
@@ -628,7 +608,6 @@ function buildJson(d) {
   };
 }
 
-// ── PREVIEW ──
 function updatePreview() {
   const d = getFormData();
   const html = buildText(d)
@@ -639,18 +618,15 @@ function updatePreview() {
   document.getElementById('preview').innerHTML = html;
   updateTimeDuration(d.tStart, d.tEnd);
   updatePhotoRecommendation(d);
-  if (typeof updateFormValidationNote === 'function') updateFormValidationNote(d);
+  updateFormValidationNote(d);
 }
 
-// ── COPY ──
 async function copyText() {
   await doClipboard(buildText(getFormData()));
   flashBtn('copyBtn', '✓ Copied', 'btn-primary success');
   showToast('✓ Copied to clipboard');
 }
 
-// ── RECORDS ──
-// ── RESET ──
 function resetForm() {
   isNight = false; hasSuffix = false;
   setEditingRecordId(null);
@@ -735,7 +711,6 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') handleAppResumeRefresh();
 });
 
-// ── UTILS ──
 async function doClipboard(text) {
   try { await navigator.clipboard.writeText(text); return; } catch {}
   const ta = document.createElement('textarea');
@@ -767,7 +742,6 @@ function togglePasswordVisibility(inputId, button) {
   button.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
 }
 
-// ── PROFILE PAGE ──
 async function renderProfilePage() {
   const content = document.getElementById('profileContent');
   if (!content) return;
@@ -783,7 +757,7 @@ async function renderProfilePage() {
   content.innerHTML = `
     <div class="profile-field">
       <span class="profile-label">User ID</span>
-      <span class="profile-value mono">${escHtml(currentUser.id)}</span>
+      <span class="profile-value mono">${esc(currentUser.id)}</span>
     </div>
     <div class="profile-field">
       <span class="profile-label">Role</span>
@@ -792,7 +766,7 @@ async function renderProfilePage() {
     <hr class="profile-divider">
     <div class="profile-field">
       <label class="profile-label" for="profileName">Name</label>
-      <input class="profile-input" id="profileName" type="text" value="${escHtml(currentUser.name)}" placeholder="Enter name">
+      <input class="profile-input" id="profileName" type="text" value="${esc(currentUser.name)}" placeholder="Enter name">
     </div>
     <div id="profileStatus" class="profile-status"></div>
     <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="submitProfileUpdate()">Save</button>
@@ -801,8 +775,13 @@ async function renderProfilePage() {
   `;
 }
 
-function escHtml(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+/** Escapes a value for interpolation into an HTML template literal. */
+function esc(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 async function submitProfileUpdate() {
@@ -836,5 +815,4 @@ async function submitProfileUpdate() {
   }
 }
 
-// ── PWA ──
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});

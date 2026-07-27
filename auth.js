@@ -1,4 +1,3 @@
-// ── AUTH MODULE ──
 async function loadAuthConfig() {
   const res = await fetch('/api/auth-config', { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to load auth config');
@@ -52,7 +51,7 @@ function clearAuthSession() {
 
 function logout() {
   clearAuthSession();
-  // Also clear any sessionStorage leftovers from old versions
+  // Drops the in-progress edit and the export authorization along with it.
   sessionStorage.clear();
   document.body.classList.remove('auth-ready');
   document.body.classList.add('auth-locked');
@@ -63,21 +62,11 @@ function logout() {
   setAuthStatus('Signed out. Sign in again.');
 }
 
+// Mirrors canEditRecord() in api/records.js — the server is the one that enforces it.
 function canCurrentUserEditRecord(record) {
   if (!record) return false;
   if (currentUser?.role === 'admin') return true;
-  const me = String(currentUser?.id || '');
-  return (
-    record.shared_edit === true ||
-    String(record.author_id || '') === me ||
-    String(record.delegated_editor_id || '') === me
-  );
-}
-
-function canCurrentUserDelegateRecord(record) {
-  if (!record) return false;
-  if (currentUser?.role === 'admin') return true;
-  return String(record.author_id || '') === String(currentUser?.id || '');
+  return record.shared_edit === true || String(record.author_id || '') === String(currentUser?.id || '');
 }
 
 async function apiFetch(url, options = {}) {
@@ -224,11 +213,6 @@ async function submitRegister() {
     btn.disabled = false;
     btn.textContent = 'Request Account';
   }
-}
-
-// kept for backwards compat — no longer used directly
-async function requestSignup() {
-  showRegisterMode();
 }
 
 async function unlockApp() {
